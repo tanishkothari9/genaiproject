@@ -113,3 +113,11 @@ export async function getBrief(id: string): Promise<Brief | undefined> {
   await ensureLoaded();
   return state.briefs.get(id);
 }
+
+export async function listBriefs(): Promise<Brief[]> {
+  await ensureLoaded();
+  // Return briefs sorted by date descending (newest first)
+  return [...state.briefs.values()].sort((a, b) => 
+    new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
+  );
+}

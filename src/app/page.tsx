@@ -32,6 +32,8 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 
 export default function Home() {
   const [error, setError] = useState<string | null>(null);
+  // History State
+  const [history, setHistory] = useState<Brief[]>([]);
 
   // Step 1 — Discovery
   const [query, setQuery] = useState("");
@@ -62,9 +64,23 @@ export default function Home() {
     setIngested(data.papers);
   }, []);
 
+  const refreshHistory = useCallback(async () => {
+    try {
+      const res = await fetch("/api/briefs");
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch history");
+    }
+  }, []);
+
   useEffect(() => {
     void refreshPapers();
-  }, [refreshPapers]);
+    void refreshHistory();
+  }, [refreshPapers, refreshHistory]);
+  
 
   const guard = async (fn: () => Promise<void>) => {
     setError(null);
@@ -175,6 +191,7 @@ export default function Home() {
         });
         setBrief(data.brief);
         setThemes(data.themes);
+        void refreshHistory();
       } finally {
         setGenerating(false);
       }
@@ -199,6 +216,41 @@ export default function Home() {
       </header>
 
       {error && <div className="step error">⚠ {error}</div>}
+
+      {/* History View */}
+      {history.length > 0 && (
+        <section className="step">
+          <h2>🕒 Past Briefs</h2>
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: "10px" }}>
+            {history.map((h) => (
+              <div className="paper" key={h.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div className="title">{h.question}</div>
+                  <div className="meta">
+                    <span>{new Date(h.generatedAt).toLocaleString()}</span>
+                    <span>{h.paperIds.length} papers</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    className="small ghost"
+                    onClick={() => {
+                      setBrief(h);
+                      setQuestion(h.question);
+                    }}
+                  >
+                    Open
+                  </button>
+                  <a className="badge" href={`/api/brief/${h.id}/export?format=md`} download>
+                    ⬇ Markdown
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
 
       {/* Step 1 — Discover */}
       <section className="step">
@@ -405,6 +457,11 @@ export default function Home() {
         {brief && (
           <div className="brief" style={{ marginTop: 18 }}>
             <div className="row" style={{ justifyContent: "flex-end", marginBottom: 8 }}>
+              {/* Add this new Markdown link here: */}
+              <a className="badge" href={`/api/brief/${brief.id}/export?format=md`} download>
+                ⬇ Markdown
+              </a>
+              {/* Keep your existing links below: */}
               <a className="badge" href={`/api/export/${brief.id}?format=bibtex`}>
                 ⬇ BibTeX
               </a>
