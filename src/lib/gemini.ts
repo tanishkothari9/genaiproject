@@ -1,11 +1,11 @@
 /**
- * gemini.ts — Shared Google Gemini client and typed helpers.
+ * gemini.ts — Gemini adapter and embeddings.
  *
- * Everything that talks to the model goes through here:
- *   - generateText()  : freeform text generation
- *   - generateJSON<T>(): structured generation, parsed + validated with a zod
- *                        schema so no untyped data leaks into the app
- *   - embed()         : text embeddings for cross-source claim clustering
+ * Provides the geminiAdapter (satisfies LLMAdapter in llm.ts via structural
+ * typing) and the embed() function, which is strictly Gemini-only.
+ *
+ * Application code should import generateText / generateJSON / embed from
+ * @/lib/llm, not directly from here.
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -40,8 +40,7 @@ function retryDelayMs(message: string, attempt: number): number {
 
 /**
  * Run a Gemini call, retrying on transient rate-limit (429) errors using the
- * server-suggested delay. Free-tier keys allow only a few requests per minute,
- * so this keeps the pipeline working instead of failing outright.
+ * server-suggested delay.
  */
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   let lastError: unknown;
@@ -63,13 +62,6 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   throw lastError;
 }
 
-/** Generate freeform text from a prompt. */
-export async function generateText(prompt: string): Promise<string> {
-  const model = getClient().getGenerativeModel({ model: GENERATION_MODEL });
-  const result = await withRetry(() => model.generateContent(prompt));
-  return result.response.text();
-}
-
 /** Strip ```json fences and surrounding noise the model sometimes adds. */
 function stripFences(raw: string): string {
   let text = raw.trim();
@@ -80,42 +72,48 @@ function stripFences(raw: string): string {
 }
 
 /**
- * Generate JSON and validate it against a zod schema.
- *
- * Uses Gemini's JSON response mode and then parses with the provided schema,
- * guaranteeing the returned value matches `T` (or throws a descriptive error).
- *
- * @param prompt  Instruction describing the desired JSON. Include the shape.
- * @param schema  zod schema describing `T`.
+ * Gemini adapter — satisfies the LLMAdapter interface in llm.ts via structural
+ * typing. Not intended for direct use by application code; use @/lib/llm instead.
  */
-export async function generateJSON<T>(prompt: string, schema: ZodType<T>): Promise<T> {
-  const model = getClient().getGenerativeModel({
-    model: GENERATION_MODEL,
-    generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
-  });
+export const geminiAdapter = {
+  name: "gemini" as const,
 
-  const result = await withRetry(() => model.generateContent(prompt));
-  const raw = stripFences(result.response.text());
+  async generateText(prompt: string): Promise<string> {
+    const model = getClient().getGenerativeModel({ model: GENERATION_MODEL });
+    const result = await withRetry(() => model.generateContent(prompt));
+    return result.response.text();
+  },
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error(`Gemini returned invalid JSON: ${raw.slice(0, 300)}…`);
-  }
+  async generateJSON<T>(prompt: string, schema: ZodType<T>): Promise<T> {
+    const model = getClient().getGenerativeModel({
+      model: GENERATION_MODEL,
+      generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+    });
 
-  const validation = schema.safeParse(parsed);
-  if (!validation.success) {
-    throw new Error(
-      `Gemini JSON failed schema validation: ${validation.error.message}`
-    );
-  }
-  return validation.data;
-}
+    const result = await withRetry(() => model.generateContent(prompt));
+    const raw = stripFences(result.response.text());
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error(`Gemini returned invalid JSON: ${raw.slice(0, 300)}…`);
+    }
+
+    const validation = schema.safeParse(parsed);
+    if (!validation.success) {
+      throw new Error(
+        `Gemini JSON failed schema validation: ${validation.error.message}`
+      );
+    }
+    return validation.data;
+  },
+};
 
 /**
  * Embed an array of texts into vectors (gemini-embedding-001).
  * Returns one number[] per input, in order.
+ * Embeddings remain strictly on Gemini and are not part of the fallback chain.
  */
 export async function embed(texts: string[]): Promise<number[][]> {
   if (texts.length === 0) return [];

@@ -12,7 +12,7 @@
 
 import { z } from "zod";
 import type { Claim, ConsensusLabel, Theme } from "@/types";
-import { embed, generateJSON } from "@/lib/gemini";
+import { embed, generateJSON } from "@/lib/llm";
 
 /**
  * Cosine-similarity threshold for adding a claim to an existing cluster.

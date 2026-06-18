@@ -9,7 +9,7 @@
 
 import { z } from "zod";
 import type { Brief, BriefSection, Claim, ConsensusLabel, Theme } from "@/types";
-import { generateJSON } from "@/lib/gemini";
+import { generateJSON } from "@/lib/llm";
 
 /** Match inline citations like [arxiv:2401.01234#c3]. */
 const CITATION_RE = /\[([^\]\s]+#c\d+)\]/g;

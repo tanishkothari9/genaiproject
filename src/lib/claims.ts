@@ -9,7 +9,7 @@
 
 import { z } from "zod";
 import type { Claim, ClaimType, StructuredPaper } from "@/types";
-import { generateJSON } from "@/lib/gemini";
+import { generateJSON } from "@/lib/llm";
 
 /** How many leading characters of each page we expose to the model. */
 const MAX_CHARS_PER_PAGE = 6_000;
