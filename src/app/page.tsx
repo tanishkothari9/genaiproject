@@ -57,9 +57,16 @@ export default function Home() {
   const [brief, setBrief] = useState<Brief | null>(null);
 
   const refreshPapers = useCallback(async () => {
-    const res = await fetch("/api/papers");
-    const data = (await res.json()) as { papers: IngestedEntry[] };
-    setIngested(data.papers);
+    try {
+      const res = await fetch("/api/papers");
+      const data = (await res.json()) as { papers?: IngestedEntry[]; error?: string };
+      // Guard against error responses (e.g. 500) so the UI never maps over undefined.
+      setIngested(Array.isArray(data.papers) ? data.papers : []);
+      if (!res.ok) setError(data.error ?? "Failed to load ingested papers.");
+    } catch {
+      setIngested([]);
+      setError("Failed to reach the server.");
+    }
   }, []);
 
   useEffect(() => {
