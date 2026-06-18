@@ -320,3 +320,82 @@ ul.next {
     transform: rotate(360deg);
   }
 }
+
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.legend .agree {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.legend .conflict {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.legend .thin {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .row {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  input[type="text"],
+  textarea {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .app {
+    padding: 16px;
+  }
+}
+
+.citation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;
+}
+
+.citation-panel {
+  width: 90%;
+  max-width: 700px;
+
+  background: var(--panel);
+
+  border: 1px solid var(--border);
+
+  border-radius: 12px;
+
+  padding: 20px;
+}
+
+.quote-box {
+  background: var(--panel-2);
+
+  border-left: 4px solid var(--accent);
+
+  padding: 12px;
+
+  margin-top: 12px;
+
+  border-radius: 6px;
+}
