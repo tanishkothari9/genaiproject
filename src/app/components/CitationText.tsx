@@ -7,6 +7,8 @@
  */
 
 import type { Claim } from "@/types";
+import { useState } from "react";
+import CitationPanel from "./CitationPanel";
 
 const CITATION_RE = /\[([^\]\s]+#c\d+)\]/g;
 
@@ -16,6 +18,8 @@ interface Props {
 }
 
 export function CitationText({ text, claimsById }: Props) {
+  const [selectedClaim, setSelectedClaim] =
+  useState<Claim | null>(null);
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -29,11 +33,13 @@ export function CitationText({ text, claimsById }: Props) {
     }
     const claim = claimsById.get(id);
     if (claim) {
-      const tip = `${claim.paperTitle} — ${claim.section}, p.${claim.page}\n“${claim.quote}”`;
+      
       parts.push(
-        <sup key={`c${key++}`} className="cite" title={tip}>
-          [{claim.page > 0 ? `p.${claim.page}` : id}]
-        </sup>
+        <sup
+          key={`c${key++}`}
+          className="cite"
+          onClick={() => setSelectedClaim(claim)}
+       ></sup>
       );
     } else {
       // Should not happen post-validation, but render harmlessly if it does.
@@ -43,5 +49,16 @@ export function CitationText({ text, claimsById }: Props) {
   }
   if (lastIndex < text.length) parts.push(text.slice(lastIndex));
 
-  return <span>{parts}</span>;
+  return (
+  <>
+    <span>{parts}</span>
+
+    <CitationPanel
+      claim={selectedClaim}
+      onClose={() =>
+        setSelectedClaim(null)
+      }
+    />
+  </>
+);
 }

@@ -219,6 +219,12 @@ export default function Home() {
           </button>
         </div>
 
+        {!discovering && query && results.length === 0 && (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No papers found. Try another search query.
+          </p>
+        )}
+
         {results.length > 0 && (
           <div style={{ marginTop: 14 }}>
             {results.map((p) => {
@@ -331,6 +337,11 @@ export default function Home() {
         <h2>
           <span className="num">3</span> Cross-source synthesis
         </h2>
+        <div className="legend">
+          <span className="agree">🟢 Agree</span>
+          <span className="conflict">🔴 Conflict</span>
+          <span className="thin">🟠 Thin Evidence</span>
+       </div>
         <p className="hint">
           Groups related claims across the {selected.size} selected paper(s) and flags where they
           agree, conflict, or rest on thin evidence.
@@ -339,6 +350,12 @@ export default function Home() {
           {synthesizing ? <span className="spinner" /> : null}
           {synthesizing ? "Synthesizing…" : "Synthesize"}
         </button>
+
+        {!synthesizing && themes.length === 0 && (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No synthesis generated yet.
+         </p>
+        )}
 
         {themes.length > 0 && (
           <div style={{ marginTop: 14 }}>
@@ -379,6 +396,12 @@ export default function Home() {
           </button>
         </div>
 
+        {!generating && !brief && (
+          <p className="muted" style={{ marginTop: 12 }}>
+             No research brief generated yet.
+          </p>
+        )}
+ 
         {brief && (
           <div className="brief" style={{ marginTop: 18 }}>
             <div className="row" style={{ justifyContent: "flex-end", marginBottom: 8 }}>
