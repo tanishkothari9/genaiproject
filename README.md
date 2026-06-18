@@ -31,7 +31,9 @@ Get a free Gemini key at <https://aistudio.google.com/app/apikey>.
 > **Free-tier note:** the default model `gemini-2.5-flash` allows only ~20
 > requests/day on a free key. If you hit a daily-quota 429, set
 > `GEMINI_MODEL=gemini-2.5-flash-lite` in `.env.local` for a much higher quota.
-> The app retries transient 429/503 errors automatically.
+> The app retries transient 429/503 errors automatically, then falls back to
+> Anthropic Claude (`ANTHROPIC_API_KEY`) and Groq (`GROQ_API_KEY`) in order.
+> Control the fallback order with `LLM_PROVIDER_ORDER=gemini,claude,groq`.
 
 ## How it works (feature → code)
 

@@ -11,7 +11,7 @@
 import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 import type { Paper, PaperStructure, StructuredPaper } from "@/types";
-import { generateJSON } from "@/lib/gemini";
+import { generateJSON } from "@/lib/llm";
 
 /** Cap how much text we send to the model (keeps latency/cost sane on long PDFs). */
 const MAX_STRUCTURE_CHARS = 40_000;
