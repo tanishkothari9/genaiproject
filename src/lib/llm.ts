@@ -188,11 +188,19 @@ function buildProviderChain(): LLMAdapter[] {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
 
-  return order.reduce<LLMAdapter[]>((acc, name) => {
+  const chain: LLMAdapter[] = [];
+  for (const name of order) {
     const adapter = ADAPTER_REGISTRY[name];
-    if (adapter !== undefined) acc.push(adapter);
-    return acc;
-  }, []);
+    if (adapter === undefined) continue;
+
+    // Filter out adapters that lack their required API key
+    if (name === "gemini" && !process.env.GOOGLE_API_KEY) continue;
+    if (name === "claude" && !process.env.ANTHROPIC_API_KEY) continue;
+    if (name === "groq" && !process.env.GROQ_API_KEY) continue;
+
+    chain.push(adapter);
+  }
+  return chain;
 }
 
 async function withFallback<T>(
@@ -201,7 +209,7 @@ async function withFallback<T>(
   const chain = buildProviderChain();
   if (chain.length === 0) {
     throw new Error(
-      "No LLM providers configured. Set LLM_PROVIDER_ORDER in .env.local."
+      "No active LLM providers are configured. Please set GOOGLE_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY in your .env.local file to enable synthesis features."
     );
   }
 

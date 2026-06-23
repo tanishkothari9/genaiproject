@@ -39,7 +39,9 @@ export function CitationText({ text, claimsById }: Props) {
           key={`c${key++}`}
           className="cite"
           onClick={() => setSelectedClaim(claim)}
-       ></sup>
+        >
+          p.{claim.page}
+        </sup>
       );
     } else {
       // Should not happen post-validation, but render harmlessly if it does.

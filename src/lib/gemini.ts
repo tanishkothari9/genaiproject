@@ -20,7 +20,7 @@ function getClient(): GoogleGenerativeAI {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "GOOGLE_API_KEY is not set. Copy .env.example to .env.local and add your key."
+      "GOOGLE_API_KEY is not set. Please add it to your .env.local file to enable paper embeddings and Gemini features."
     );
   }
   return new GoogleGenerativeAI(apiKey);
