@@ -97,3 +97,41 @@ export async function ingestPaper(paper: Paper, pdf: Uint8Array): Promise<Struct
     ingestedAt: new Date().toISOString(),
   };
 }
+
+/**
+ * Creates a readable stream response for tracking progressive backend operations.
+ */
+export function createProgressStream(
+  asyncFn: (sendUpdate: (stage: string, text: string, percentage: number) => Promise<void>) => Promise<any>
+) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const sendUpdate = async (stage: string, text: string, percentage: number) => {
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ type: "status", stage, text, percentage }) + "\n")
+        );
+      };
+
+      try {
+        const result = await asyncFn(sendUpdate);
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ type: "result", ...result, percentage: 100 }) + "\n")
+        );
+      } catch (err: any) {
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ type: "error", error: err.message || "Operation failed" }) + "\n")
+        );
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Transfer-Encoding": "chunked",
+    },
+  });
+}

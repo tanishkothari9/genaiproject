@@ -59,6 +59,14 @@ async function ensureLoaded(): Promise<void> {
   if (state.loaded) return;
   state.loaded = true; // mark first so a read failure doesn't retry every call
 
+  if (process.env.ENABLE_PERSISTENCE !== "true") {
+    // Operate strictly in-memory (empty Maps).
+    state.papers = new Map();
+    state.claims = new Map();
+    state.briefs = new Map();
+    return;
+  }
+
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
     const papers = await readJson<StructuredPaper[]>(PAPERS_FILE, []);
@@ -74,6 +82,7 @@ async function ensureLoaded(): Promise<void> {
 }
 
 async function persist(file: string, data: unknown): Promise<void> {
+  if (process.env.ENABLE_PERSISTENCE !== "true") return;
   // Best-effort mirror; never let a read-only filesystem crash a request.
   try {
     await fs.mkdir(DATA_DIR, { recursive: true });
@@ -96,9 +105,35 @@ export async function getPaper(id: string): Promise<StructuredPaper | undefined>
   return state.papers.get(id);
 }
 
-export async function listPapers(): Promise<StructuredPaper[]> {
+export async function listPapers(sessionId?: string): Promise<StructuredPaper[]> {
   await ensureLoaded();
-  return [...state.papers.values()];
+  const allPapers = [...state.papers.values()];
+  if (sessionId) {
+    return allPapers.filter((p) => p.sessionId === sessionId);
+  }
+  return allPapers;
+}
+
+export async function deletePaper(id: string): Promise<void> {
+  await ensureLoaded();
+  state.papers.delete(id);
+  state.claims.delete(id);
+
+  let briefsChanged = false;
+  for (const [briefId, brief] of state.briefs.entries()) {
+    if (brief.paperIds.includes(id)) {
+      brief.paperIds = brief.paperIds.filter((pid) => pid !== id);
+      brief.citedClaims = brief.citedClaims.filter((c) => c.paperId !== id);
+      state.briefs.set(briefId, brief);
+      briefsChanged = true;
+    }
+  }
+
+  await persist(PAPERS_FILE, [...state.papers.values()]);
+  await persist(CLAIMS_FILE, [...state.claims.entries()]);
+  if (briefsChanged) {
+    await persist(BRIEFS_FILE, [...state.briefs.values()]);
+  }
 }
 
 // ─── Claims ──────────────────────────────────────────────────────────────────
@@ -132,10 +167,14 @@ export async function getBrief(id: string): Promise<Brief | undefined> {
   return state.briefs.get(id);
 }
 
-export async function listBriefs(): Promise<Brief[]> {
+export async function listBriefs(sessionId?: string): Promise<Brief[]> {
   await ensureLoaded();
   // Return briefs sorted by date descending (newest first)
-  return [...state.briefs.values()].sort((a, b) => 
+  const allBriefs = [...state.briefs.values()].sort((a, b) => 
     new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime()
   );
+  if (sessionId) {
+    return allBriefs.filter((b) => b.sessionId === sessionId);
+  }
+  return allBriefs;
 }

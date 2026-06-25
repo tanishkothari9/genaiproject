@@ -40,6 +40,7 @@ export interface StructuredPaper extends Paper {
   pages: string[];
   structure: PaperStructure;
   ingestedAt: string;
+  sessionId?: string;
 }
 
 export type ClaimType = "finding" | "hypothesis" | "limitation";
@@ -95,4 +96,5 @@ export interface Brief {
   /** Claims referenced by the brief, kept for traceability + export. */
   citedClaims: Claim[];
   generatedAt: string;
+  sessionId?: string;
 }

@@ -14,9 +14,10 @@ import { getClaimsForPapers, saveBrief } from "@/lib/store";
 
 export async function POST(request: Request) {
   try {
-    const { question, paperIds } = (await request.json()) as {
+    const { question, paperIds, sessionId } = (await request.json()) as {
       question?: string;
       paperIds?: string[];
+      sessionId?: string;
     };
     if (!question || !question.trim()) {
       return NextResponse.json({ error: "A 'question' is required." }, { status: 400 });
@@ -35,6 +36,9 @@ export async function POST(request: Request) {
 
     const themes = await synthesize(claims);
     const brief = await generateBrief(question.trim(), themes, claims);
+    if (sessionId) {
+      brief.sessionId = sessionId;
+    }
 
     await saveBrief(brief);
     return NextResponse.json({ brief, themes });
